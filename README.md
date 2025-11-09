@@ -1,5 +1,12 @@
 # Standalone MCP Server for OpenProject
 
+[🇷🇺 Русский](#русский) | [🇬🇧 English](#english)
+
+---
+
+<a name="русский"></a>
+# 🇷🇺 Русский
+
 Standalone MCP-сервер для интеграции OpenProject с Cursor IDE. Работает полностью локально, без необходимости развертывания на Netlify или других облачных платформах.
 
 ## Описание
@@ -138,3 +145,145 @@ export OPENPROJECT_API_KEY="your-api-token-here"
 - ✅ Простая установка и настройка
 - ✅ Полный контроль над кодом
 
+---
+
+<a name="english"></a>
+# 🇬🇧 English
+
+Standalone MCP server for integrating OpenProject with Cursor IDE. Works completely locally, without the need to deploy on Netlify or other cloud platforms.
+
+## Description
+
+This MCP server allows Cursor IDE to directly interact with your OpenProject instance through the Model Context Protocol. The server runs completely locally and does not require deployment on cloud platforms.
+
+## Installation
+
+### Automatic Installation (Recommended)
+
+Dependencies are installed **automatically** on the first run of the MCP server. Simply configure the MCP settings (see below), and dependencies will be installed automatically on first connection.
+
+### Manual Installation (Optional)
+
+If you want to install dependencies manually in advance:
+
+```bash
+npm install
+```
+
+**Note:** If you plan to use the `npm link` option (see below), you need to make the script executable:
+```bash
+chmod +x index.js
+```
+
+If you use the `node index.js` option in the MCP configuration, this step is not required.
+
+## Configuration in Cursor
+
+Add the following configuration to the MCP Cursor file (`~/.cursor/mcp.json` or `~/.config/cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/mcp-openproject-standalone/index.js"
+      ],
+      "env": {
+        "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
+        "OPENPROJECT_API_KEY": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+**Or if installed globally via npm link:**
+
+```bash
+npm link
+```
+
+Then in the configuration you can use:
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "mcp-openproject-standalone",
+      "env": {
+        "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
+        "OPENPROJECT_API_KEY": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+## Available Functions
+
+1. **list_projects** - Get a list of all projects
+2. **get_project** - Get project details by ID
+3. **list_work_packages** - Get a list of work packages in a project
+4. **get_work_package** - Get work package details by ID
+5. **create_work_package** - Create a new work package
+6. **update_work_package** - Update an existing work package
+7. **list_statuses** - Get a list of all available statuses in OpenProject
+8. **get_available_statuses** - Get available statuses for a specific work package (workflow). Returns the current status and all statuses that can be set for this work package
+
+## Environment Variables
+
+Environment variables can be set in two ways:
+
+### 1. In MCP Configuration (Recommended)
+
+Add the `env` section to the MCP configuration in the file `~/.cursor/mcp.json` or `~/.config/cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-openproject-standalone/index.js"],
+      "env": {
+        "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
+        "OPENPROJECT_API_KEY": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+This method is convenient as all settings are stored in one place.
+
+### 2. Via System Environment Variables
+
+You can also set environment variables in the system before running:
+
+```bash
+export OPENPROJECT_BASE_URL="https://your-openproject-instance.com"
+export OPENPROJECT_API_KEY="your-api-token-here"
+```
+
+**Supported variables:**
+- `OPENPROJECT_BASE_URL` or `OPENPROJECT_URL` - URL of your OpenProject instance
+- `OPENPROJECT_API_KEY` or `OPENPROJECT_API_TOKEN` - API token from OpenProject
+
+## Usage
+
+After configuration, you can use in Cursor:
+
+- "Show me all projects from OpenProject"
+- "Show all work packages in project with ID 123"
+- "Create a work package in project 1 with title 'New Task'"
+- "Update work package #123"
+- "Show all available statuses"
+- "What statuses can be set for work package #123?"
+
+## Advantages
+
+- ✅ Fully standalone - works locally
+- ✅ No deployment on Netlify required
+- ✅ Read and write support (CRUD operations)
+- ✅ Simple installation and configuration
+- ✅ Full control over the code
