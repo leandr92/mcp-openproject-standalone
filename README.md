@@ -10,7 +10,6 @@ Standalone MCP-сервер для интеграции OpenProject с Cursor ID
 
 1. Установите зависимости:
 ```bash
-cd scripts/mcp-openproject-standalone
 npm install
 ```
 
@@ -29,7 +28,7 @@ chmod +x index.js
     "openproject": {
       "command": "node",
       "args": [
-        "/absolute/path/to/Academy/scripts/mcp-openproject-standalone/index.js"
+        "/absolute/path/to/mcp-openproject-standalone/index.js"
       ],
       "env": {
         "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
@@ -43,7 +42,6 @@ chmod +x index.js
 **Или если установили глобально через npm link:**
 
 ```bash
-cd scripts/mcp-openproject-standalone
 npm link
 ```
 
