@@ -15,11 +15,31 @@ Standalone MCP-сервер для интеграции OpenProject с Cursor ID
 
 ## Установка
 
-### Автоматическая установка (рекомендуется)
+### Установка через npm (рекомендуется, после публикации)
+
+После публикации пакета в npm, установите его глобально:
+
+```bash
+npm install -g mcp-openproject-standalone
+```
+
+Или локально в проект:
+
+```bash
+npm install mcp-openproject-standalone
+```
+
+Зависимости установятся автоматически вместе с пакетом.
+
+### Установка из исходников
+
+Если вы клонировали репозиторий или хотите использовать локальную версию:
+
+#### Автоматическая установка зависимостей
 
 Зависимости устанавливаются **автоматически** при первом запуске MCP-сервера. Просто настройте конфигурацию MCP (см. ниже), и при первом подключении зависимости будут установлены автоматически.
 
-### Ручная установка (опционально)
+#### Ручная установка зависимостей (опционально)
 
 Если хотите установить зависимости вручную заранее:
 
@@ -38,13 +58,18 @@ chmod +x index.js
 
 Добавьте следующую конфигурацию в файл MCP Cursor (`~/.cursor/mcp.json` или `~/.config/cursor/mcp.json`):
 
+### Автоматическая установка через npx (рекомендуется)
+
+Используйте `npx` для автоматической установки и запуска пакета. Если пакет не установлен, `npx` автоматически скачает и запустит его:
+
 ```json
 {
   "mcpServers": {
     "openproject": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/absolute/path/to/mcp-openproject-standalone/index.js"
+        "-y",
+        "mcp-openproject-standalone"
       ],
       "env": {
         "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
@@ -55,7 +80,43 @@ chmod +x index.js
 }
 ```
 
-**Или если установили глобально через npm link:**
+**Преимущества:**
+- ✅ Автоматическая установка пакета при первом запуске
+- ✅ Не требует предварительной установки
+- ✅ Автоматическое обновление до последней версии
+- ✅ Кэширование пакета для последующих запусков
+
+**Примечание:** Флаг `-y` автоматически подтверждает установку пакета без запроса.
+
+### Если установили через npm (глобально или локально)
+
+Если вы уже установили пакет глобально:
+
+```bash
+npm install -g mcp-openproject-standalone
+```
+
+Тогда в конфигурации можно использовать:
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "mcp-openproject-standalone",
+      "env": {
+        "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
+        "OPENPROJECT_API_KEY": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+**Примечание:** При глобальной установке (`npm install -g`) команда `mcp-openproject-standalone` будет доступна из любого места. При локальной установке используйте полный путь к `node_modules/.bin/mcp-openproject-standalone` или используйте `npx mcp-openproject-standalone`.
+
+### Если используете локальную версию из исходников
+
+#### Вариант 1: Через npm link
 
 ```bash
 npm link
@@ -68,6 +129,25 @@ npm link
   "mcpServers": {
     "openproject": {
       "command": "mcp-openproject-standalone",
+      "env": {
+        "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
+        "OPENPROJECT_API_KEY": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+#### Вариант 2: Прямой путь к файлу
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/mcp-openproject-standalone/index.js"
+      ],
       "env": {
         "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
         "OPENPROJECT_API_KEY": "your-api-token-here"
@@ -158,11 +238,31 @@ This MCP server allows Cursor IDE to directly interact with your OpenProject ins
 
 ## Installation
 
-### Automatic Installation (Recommended)
+### Install via npm (Recommended, after publication)
+
+After the package is published to npm, install it globally:
+
+```bash
+npm install -g mcp-openproject-standalone
+```
+
+Or locally in a project:
+
+```bash
+npm install mcp-openproject-standalone
+```
+
+Dependencies will be installed automatically with the package.
+
+### Install from source
+
+If you cloned the repository or want to use a local version:
+
+#### Automatic dependency installation
 
 Dependencies are installed **automatically** on the first run of the MCP server. Simply configure the MCP settings (see below), and dependencies will be installed automatically on first connection.
 
-### Manual Installation (Optional)
+#### Manual dependency installation (Optional)
 
 If you want to install dependencies manually in advance:
 
@@ -181,13 +281,18 @@ If you use the `node index.js` option in the MCP configuration, this step is not
 
 Add the following configuration to the MCP Cursor file (`~/.cursor/mcp.json` or `~/.config/cursor/mcp.json`):
 
+### Automatic installation via npx (Recommended)
+
+Use `npx` for automatic installation and running of the package. If the package is not installed, `npx` will automatically download and run it:
+
 ```json
 {
   "mcpServers": {
     "openproject": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/absolute/path/to/mcp-openproject-standalone/index.js"
+        "-y",
+        "mcp-openproject-standalone"
       ],
       "env": {
         "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
@@ -198,7 +303,43 @@ Add the following configuration to the MCP Cursor file (`~/.cursor/mcp.json` or 
 }
 ```
 
-**Or if installed globally via npm link:**
+**Advantages:**
+- ✅ Automatic package installation on first run
+- ✅ No pre-installation required
+- ✅ Automatic update to latest version
+- ✅ Package caching for subsequent runs
+
+**Note:** The `-y` flag automatically confirms package installation without prompting.
+
+### If installed via npm (globally or locally)
+
+If you have already installed the package globally:
+
+```bash
+npm install -g mcp-openproject-standalone
+```
+
+Then in the configuration you can use:
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "mcp-openproject-standalone",
+      "env": {
+        "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
+        "OPENPROJECT_API_KEY": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+**Note:** With global installation (`npm install -g`), the `mcp-openproject-standalone` command will be available from anywhere. With local installation, use the full path to `node_modules/.bin/mcp-openproject-standalone` or use `npx mcp-openproject-standalone`.
+
+### If using local version from source
+
+#### Option 1: Via npm link
 
 ```bash
 npm link
@@ -211,6 +352,25 @@ Then in the configuration you can use:
   "mcpServers": {
     "openproject": {
       "command": "mcp-openproject-standalone",
+      "env": {
+        "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
+        "OPENPROJECT_API_KEY": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+#### Option 2: Direct path to file
+
+```json
+{
+  "mcpServers": {
+    "openproject": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/mcp-openproject-standalone/index.js"
+      ],
       "env": {
         "OPENPROJECT_BASE_URL": "https://your-openproject-instance.com",
         "OPENPROJECT_API_KEY": "your-api-token-here"
