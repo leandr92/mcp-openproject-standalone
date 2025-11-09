@@ -54,6 +54,66 @@ chmod +x index.js
 
 Если вы используете вариант с `node index.js` в конфигурации MCP, то этот шаг не обязателен.
 
+## Обновление пакета
+
+После первичной установки пакет можно обновить до последней версии.
+
+### Обновление при использовании npx
+
+Если вы используете `npx` в конфигурации MCP, пакет автоматически обновляется до последней версии при каждом запуске. Дополнительных действий не требуется.
+
+### Обновление при глобальной установке
+
+Если вы установили пакет глобально через `npm install -g`, обновите его командой:
+
+```bash
+npm update -g mcp-openproject-standalone
+```
+
+Или переустановите последнюю версию:
+
+```bash
+npm install -g mcp-openproject-standalone@latest
+```
+
+### Обновление при локальной установке
+
+Если пакет установлен локально в проект:
+
+```bash
+npm update mcp-openproject-standalone
+```
+
+Или переустановите последнюю версию:
+
+```bash
+npm install mcp-openproject-standalone@latest
+```
+
+### Проверка текущей версии
+
+Чтобы узнать текущую установленную версию:
+
+```bash
+npm list -g mcp-openproject-standalone
+```
+
+Или для локальной установки:
+
+```bash
+npm list mcp-openproject-standalone
+```
+
+Чтобы узнать последнюю доступную версию в npm:
+
+```bash
+npm view mcp-openproject-standalone version
+```
+
+### После обновления
+
+После обновления пакета перезапустите Cursor IDE, чтобы изменения вступили в силу.
+
 ## Настройка в Cursor
 
 Добавьте следующую конфигурацию в файл MCP Cursor (`~/.cursor/mcp.json` или `~/.config/cursor/mcp.json`):
@@ -276,6 +336,66 @@ chmod +x index.js
 ```
 
 If you use the `node index.js` option in the MCP configuration, this step is not required.
+
+## Updating the Package
+
+After the initial installation, you can update the package to the latest version.
+
+### Updating when using npx
+
+If you use `npx` in the MCP configuration, the package is automatically updated to the latest version on each run. No additional action is required.
+
+### Updating with global installation
+
+If you installed the package globally via `npm install -g`, update it with:
+
+```bash
+npm update -g mcp-openproject-standalone
+```
+
+Or reinstall the latest version:
+
+```bash
+npm install -g mcp-openproject-standalone@latest
+```
+
+### Updating with local installation
+
+If the package is installed locally in a project:
+
+```bash
+npm update mcp-openproject-standalone
+```
+
+Or reinstall the latest version:
+
+```bash
+npm install mcp-openproject-standalone@latest
+```
+
+### Checking current version
+
+To see the currently installed version:
+
+```bash
+npm list -g mcp-openproject-standalone
+```
+
+Or for local installation:
+
+```bash
+npm list mcp-openproject-standalone
+```
+
+To see the latest available version on npm:
+
+```bash
+npm view mcp-openproject-standalone version
+```
+
+### After updating
+
+After updating the package, restart Cursor IDE for the changes to take effect.
 
 ## Configuration in Cursor
 
