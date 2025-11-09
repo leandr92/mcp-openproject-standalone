@@ -176,11 +176,23 @@ class OpenProjectClient {
     };
 
     // Format description as OpenProject expects
-    if (payload.description && typeof payload.description === 'string') {
-      payload.description = {
-        format: 'markdown',
-        raw: payload.description,
-      };
+    // Always format description if it's provided, even if it's already an object
+    if (payload.description !== undefined) {
+      if (typeof payload.description === 'string') {
+        payload.description = {
+          format: 'markdown',
+          raw: payload.description,
+        };
+      } else if (typeof payload.description === 'object' && payload.description !== null) {
+        // If it's already an object, ensure it has the correct format
+        if (!payload.description.format) {
+          payload.description.format = 'markdown';
+        }
+        if (!payload.description.raw && payload.description.raw !== '') {
+          // If raw is missing, try to extract from html or use empty string
+          payload.description.raw = payload.description.html || '';
+        }
+      }
     }
 
     // Convert statusId to _links.status.href format if present
@@ -192,6 +204,11 @@ class OpenProjectClient {
         },
       };
       delete payload.statusId;
+    }
+
+    // Log the payload for debugging (only in development)
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+      console.error('[OpenProject] Updating work package:', JSON.stringify(payload, null, 2));
     }
 
     return await this.request(`/api/v3/work_packages/${workPackageId}`, {
@@ -264,6 +281,20 @@ class OpenProjectClient {
         totalAvailable: availableStatuses.length,
       },
     };
+  }
+
+  async addComment(workPackageId, comment) {
+    const payload = {
+      comment: {
+        format: 'markdown',
+        raw: comment,
+      },
+    };
+
+    return await this.request(`/api/v3/work_packages/${workPackageId}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 }
 
@@ -430,6 +461,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['work_package_id'],
       },
     },
+    {
+      name: 'add_comment',
+      description: 'Add a comment to a work package',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          work_package_id: {
+            type: 'number',
+            description: 'The ID of the work package',
+          },
+          comment: {
+            type: 'string',
+            description: 'The comment text (markdown format)',
+          },
+        },
+        required: ['work_package_id', 'comment'],
+      },
+    },
   ],
 }));
 
@@ -508,6 +557,16 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         };
 
       case 'update_work_package':
+        const updateData = {};
+        if (args.subject !== undefined) {
+          updateData.subject = args.subject;
+        }
+        if (args.description !== undefined) {
+          updateData.description = args.description;
+        }
+        if (args.status_id !== undefined) {
+          updateData.statusId = args.status_id;
+        }
         return {
           content: [
             {
@@ -515,11 +574,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
               text: JSON.stringify(
                 await client.updateWorkPackage(
                   args.work_package_id,
-                  {
-                    subject: args.subject,
-                    description: args.description,
-                    statusId: args.status_id,
-                  },
+                  updateData,
                   args.lock_version
                 ),
                 null,
@@ -546,6 +601,20 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
               type: 'text',
               text: JSON.stringify(
                 await client.getAvailableStatuses(args.work_package_id),
+                null,
+                2
+              ),
+            },
+          ],
+        };
+
+      case 'add_comment':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                await client.addComment(args.work_package_id, args.comment),
                 null,
                 2
               ),
