@@ -133,7 +133,6 @@ class OpenProjectClient {
   async createWorkPackage(projectId, workPackageData) {
     const payload = {
       subject: workPackageData.subject,
-      description: workPackageData.description,
       _links: {
         project: {
           href: `/api/v3/projects/${projectId}`,
@@ -143,6 +142,14 @@ class OpenProjectClient {
         },
       },
     };
+    
+    // Format description as OpenProject expects
+    if (workPackageData.description) {
+      payload.description = {
+        format: 'markdown',
+        raw: workPackageData.description,
+      };
+    }
 
     if (workPackageData.assigneeId) {
       payload._links.assignee = {
@@ -167,6 +174,14 @@ class OpenProjectClient {
       lockVersion,
       ...workPackageData,
     };
+
+    // Format description as OpenProject expects
+    if (payload.description && typeof payload.description === 'string') {
+      payload.description = {
+        format: 'markdown',
+        raw: payload.description,
+      };
+    }
 
     // Convert statusId to _links.status.href format if present
     if (payload.statusId) {
