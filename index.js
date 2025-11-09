@@ -7,12 +7,59 @@
  * No Netlify or cloud deployment required
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { existsSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
+
+// Auto-install dependencies if node_modules doesn't exist
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const nodeModulesPath = join(__dirname, 'node_modules');
+const packageJsonPath = join(__dirname, 'package.json');
+
+// Try to import SDK modules, install dependencies if needed
+let Server, StdioServerTransport, CallToolRequestSchema, ListToolsRequestSchema;
+
+async function loadSDK() {
+  try {
+    const sdk = await import('@modelcontextprotocol/sdk/server/index.js');
+    const transport = await import('@modelcontextprotocol/sdk/server/stdio.js');
+    const types = await import('@modelcontextprotocol/sdk/types.js');
+    
+    Server = sdk.Server;
+    StdioServerTransport = transport.StdioServerTransport;
+    CallToolRequestSchema = types.CallToolRequestSchema;
+    ListToolsRequestSchema = types.ListToolsRequestSchema;
+  } catch (error) {
+    if (error.code === 'ERR_MODULE_NOT_FOUND' && existsSync(packageJsonPath)) {
+      console.error('Dependencies not found. Installing automatically...');
+      try {
+        execSync('npm install', {
+          cwd: __dirname,
+          stdio: 'inherit',
+        });
+        console.error('Dependencies installed successfully. Retrying import...');
+        // Retry import after installation
+        const sdk = await import('@modelcontextprotocol/sdk/server/index.js');
+        const transport = await import('@modelcontextprotocol/sdk/server/stdio.js');
+        const types = await import('@modelcontextprotocol/sdk/types.js');
+        
+        Server = sdk.Server;
+        StdioServerTransport = transport.StdioServerTransport;
+        CallToolRequestSchema = types.CallToolRequestSchema;
+        ListToolsRequestSchema = types.ListToolsRequestSchema;
+      } catch (installError) {
+        console.error('Failed to install dependencies:', installError.message);
+        process.exit(1);
+      }
+    } else {
+      throw error;
+    }
+  }
+}
+
+await loadSDK();
 
 // OpenProject API Client
 class OpenProjectClient {
@@ -52,8 +99,31 @@ class OpenProjectClient {
   }
 
   async listWorkPackages(projectId) {
-    const data = await this.request(`/api/v3/projects/${projectId}/work_packages`);
-    return data._embedded?.elements || [];
+    const allWorkPackages = [];
+    let url = `/api/v3/projects/${projectId}/work_packages?pageSize=100`;
+    
+    while (url) {
+      const data = await this.request(url);
+      const elements = data._embedded?.elements || [];
+      allWorkPackages.push(...elements);
+      
+      // Check if there's a next page
+      if (data._links?.next?.href) {
+        // Extract the path from the URL (handle both absolute and relative URLs)
+        const nextHref = data._links.next.href;
+        if (nextHref.startsWith('http://') || nextHref.startsWith('https://')) {
+          const nextUrl = new URL(nextHref);
+          url = nextUrl.pathname + nextUrl.search;
+        } else {
+          // Relative URL
+          url = nextHref;
+        }
+      } else {
+        url = null;
+      }
+    }
+    
+    return allWorkPackages;
   }
 
   async getWorkPackage(workPackageId) {
@@ -98,10 +168,87 @@ class OpenProjectClient {
       ...workPackageData,
     };
 
+    // Convert statusId to _links.status.href format if present
+    if (payload.statusId) {
+      payload._links = {
+        ...payload._links,
+        status: {
+          href: `/api/v3/statuses/${payload.statusId}`,
+        },
+      };
+      delete payload.statusId;
+    }
+
     return await this.request(`/api/v3/work_packages/${workPackageId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
+  }
+
+  async listStatuses() {
+    const data = await this.request('/api/v3/statuses');
+    return data._embedded?.elements || [];
+  }
+
+  async getWorkPackageForm(workPackageId) {
+    // Get the form schema which contains available transitions
+    return await this.request(`/api/v3/work_packages/${workPackageId}/form`);
+  }
+
+  async getAvailableStatuses(workPackageId) {
+    // Get the work package to see current status
+    const workPackage = await this.getWorkPackage(workPackageId);
+    const currentStatusId = workPackage._links?.status?.href?.match(/\/(\d+)$/)?.[1];
+    const currentStatusName = workPackage._links?.status?.title;
+    
+    // Get the form which contains available status transitions
+    const form = await this.getWorkPackageForm(workPackageId);
+    
+    // Extract available statuses from the form schema
+    // Try different possible paths in the form structure
+    const availableStatuses = [];
+    
+    // Path 1: Standard form schema path
+    if (form._embedded?.schema?.status?._links?.allowedValues) {
+      const statuses = form._embedded.schema.status._links.allowedValues;
+      for (const status of statuses) {
+        const statusId = status.href?.match(/\/(\d+)$/)?.[1];
+        if (statusId) {
+          availableStatuses.push({
+            id: statusId,
+            name: status.title || status.name,
+            href: status.href,
+          });
+        }
+      }
+    }
+    // Path 2: Alternative form structure
+    else if (form._embedded?.schema?.status?.writable && form._embedded?.schema?.status?._links?.allowedValues) {
+      const statuses = form._embedded.schema.status._links.allowedValues;
+      for (const status of statuses) {
+        const statusId = status.href?.match(/\/(\d+)$/)?.[1];
+        if (statusId) {
+          availableStatuses.push({
+            id: statusId,
+            name: status.title || status.name,
+            href: status.href,
+          });
+        }
+      }
+    }
+    
+    return {
+      currentStatus: {
+        id: currentStatusId,
+        name: currentStatusName,
+        href: workPackage._links?.status?.href,
+      },
+      availableStatuses: availableStatuses,
+      workflow: {
+        description: 'Available status transitions for this work package',
+        totalAvailable: availableStatuses.length,
+      },
+    };
   }
 }
 
@@ -246,6 +393,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['work_package_id', 'lock_version'],
       },
     },
+    {
+      name: 'list_statuses',
+      description: 'List all available statuses in OpenProject',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    },
+    {
+      name: 'get_available_statuses',
+      description: 'Get available status transitions for a specific work package (workflow). Returns current status and all statuses that can be set for this work package.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          work_package_id: {
+            type: 'number',
+            description: 'The ID of the work package',
+          },
+        },
+        required: ['work_package_id'],
+      },
+    },
   ],
 }));
 
@@ -338,6 +507,30 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
                   },
                   args.lock_version
                 ),
+                null,
+                2
+              ),
+            },
+          ],
+        };
+
+      case 'list_statuses':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(await client.listStatuses(), null, 2),
+            },
+          ],
+        };
+
+      case 'get_available_statuses':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                await client.getAvailableStatuses(args.work_package_id),
                 null,
                 2
               ),
