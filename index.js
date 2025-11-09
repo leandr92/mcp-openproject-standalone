@@ -195,8 +195,34 @@ class OpenProjectClient {
       }
     }
 
-    // Convert statusId to _links.status.href format if present
+    // Check workflow if statusId is being changed
     if (payload.statusId) {
+      // Get available statuses for this work package
+      const workflowInfo = await this.getAvailableStatuses(workPackageId);
+      const newStatusId = String(payload.statusId);
+      
+      // Check if the new status is in the list of available statuses
+      const isStatusAvailable = workflowInfo.availableStatuses.some(
+        status => String(status.id) === newStatusId
+      );
+      
+      // Also check if it's the current status (no change needed)
+      const isCurrentStatus = String(workflowInfo.currentStatus.id) === newStatusId;
+      
+      if (!isStatusAvailable && !isCurrentStatus) {
+        const availableStatusNames = workflowInfo.availableStatuses
+          .map(s => `${s.name} (ID: ${s.id})`)
+          .join(', ');
+        
+        throw new Error(
+          `Cannot set status ID ${payload.statusId} for work package ${workPackageId}. ` +
+          `Current status: ${workflowInfo.currentStatus.name} (ID: ${workflowInfo.currentStatus.id}). ` +
+          `Available statuses: ${availableStatusNames || 'none'}. ` +
+          `Please use get_available_statuses to see valid status transitions.`
+        );
+      }
+      
+      // Convert statusId to _links.status.href format
       payload._links = {
         ...payload._links,
         status: {
@@ -411,7 +437,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'update_work_package',
-      description: 'Update an existing work package',
+      description: 'Update an existing work package. Automatically validates status transitions according to OpenProject workflow rules. If you try to set an invalid status (e.g., directly from "Новый" to "Выполнено"), it will return an error with available statuses. Use get_available_statuses to see valid transitions.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -433,7 +459,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
           status_id: {
             type: 'number',
-            description: 'The ID of the status',
+            description: 'The ID of the status. Must be a valid status transition according to OpenProject workflow. Use get_available_statuses to see which statuses can be set from the current status.',
           },
         },
         required: ['work_package_id', 'lock_version'],
